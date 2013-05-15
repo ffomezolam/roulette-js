@@ -18,6 +18,7 @@
      *
      * @class Roulette
      * @constructor
+     * TODO: Implement aliases for string items
      */
     function Roulette() {
         this.length = 0;
@@ -35,6 +36,8 @@
          * @method add
          * @chainable
          * @param {any} item Item to add
+         * TODO: Somehow fill in empty indices created by item removal... or
+         * never remove them...
          */
         add: function(item) {
             var idx = this.indexOf(item);
@@ -88,6 +91,7 @@
          * @method indexOf
          * @param {any} item Item
          * @return {Number} Item index or -1 if not found
+         * TODO: Linear search rulez
          */
         indexOf: function(item) {
             if(!this.length) return -1;
@@ -117,6 +121,7 @@
          * @method get
          * @param {Number} [idx] Index
          * @return {any} Item
+         * TODO: Linear search rulez agayne
          */
         get: function(idx) {
             if(!this.length) return null;
@@ -142,6 +147,7 @@
          *
          * @method setWeights
          * @chainable
+         * TODO: is there any better way to do this?
          */
         setWeights: function() {
             if(!this.total) return this;
