@@ -4,10 +4,10 @@
  * @module roulette
  */
 (function(name, context, definition) {
-    if(typeof module !== 'undefined' && module.exports) module.exports = definition(/*require(deps)*/);
-    else if(typeof define === 'function' && define.amd) define(/*[deps], */definition);
+    if(typeof module !== 'undefined' && module.exports) module.exports = definition();
+    else if(typeof define === 'function' && define.amd) define(definition);
     else context[name] = definition();
-})('Roulette', this, function(/*deps*/) {
+})('Roulette', this, function() {
     function defaultCompare(a, b) {
         return a === b;
     }
