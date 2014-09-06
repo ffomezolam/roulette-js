@@ -18,12 +18,32 @@
      *
      * @class Roulette
      * @constructor
+     * @param {Object} [opts] Options
      * TODO: Implement aliases for string items
      */
-    function Roulette() {
+    function Roulette(opts) {
+        /**
+         * Number of items
+         *
+         * @property length
+         * @type Number
+         * @default 0
+         */
         this.length = 0;
+
+        /**
+         * Whether addition and removal of items automatically initializes
+         * probabilities
+         *
+         * @property autoinit
+         * @type Boolean
+         * @default false
+         */
+        this.autoinit = opts && 'autoinit' in opts ? !!opts.autoinit : false;
+
+        // Private properties
         this._tally = [];
-        this.total = 0;
+        this._total = 0;
         this._wheel = [];
         this._compare = defaultCompare;
         this._aliases = null;
@@ -36,22 +56,25 @@
          * @method add
          * @chainable
          * @param {any} item Item to add
-         * TODO: Somehow fill in empty indices created by item removal... or
-         * never remove them...
          */
         add: function(item) {
             var idx = this.indexOf(item);
+
             if(idx < 0) {
                 // item doesn't exist
                 idx = this.length;
                 this[idx] = item;
                 this.length++;
                 this._tally[idx] = 1;
-                this.total++;
+                this._total++;
             } else {
+                // item exists - just increase probability
                 this._tally[idx]++;
-                this.total++;
+                this._total++;
             }
+
+            if(this.autoinit) this.setWeights();
+
             return this;
         },
 
@@ -62,15 +85,21 @@
          * @chainable
          * @param {any} item Item to remove
          * TODO: can't subtract from length, because it is used for searching
+         * TODO: Somehow fill in empty indices created by item removal... or
+         * never remove them...
          */
         remove: function(item) {
             var idx = this.indexOf(item);
             if(idx < 0) return this;
-            this._tally[idx]--;
-            this.total--;
+            if(this._tally[idx] > 0) {
+                this._tally[idx]--;
+                this._total--;
+            }
 
             if(!this._tally[idx]) {
             }
+            
+            if(this.autoinit) this.setWeights();
 
             return this;
         },
@@ -81,8 +110,15 @@
          * @method purge
          * @chainable
          * @param {any} item Item to remove
+         * TODO: Finish implementing this
          */
         purge: function(item) {
+            var idx = this.indexOf(item);
+            if(idx < 0) return this;
+            var n = this._tally[idx];
+            this._tally[idx] = 0;
+            this._total -= n;
+            return this;
         },
 
         /**
@@ -143,17 +179,17 @@
         },
 
         /**
-         * Initialize the wheel
+         * Set the probabilities
          *
          * @method setWeights
          * @chainable
          * TODO: is there any better way to do this?
          */
         setWeights: function() {
-            if(!this.total) return this;
+            if(!this._total) return this;
             for (var i = 0, l = this._tally.length; i < l; i ++) {
                 var c = this._tally[i];
-                var prob = c / this.total;
+                var prob = c / this._total;
                 this._wheel[i] = i ? this._wheel[i - 1] + prob : prob;
             }
             return this;
@@ -164,6 +200,7 @@
          *
          * @method setCompare
          * @chainable
+         * @param {Function} fn Comparison function
          */
         setCompare: function(fn) {
             this._compare = fn;
