@@ -12,6 +12,14 @@
         return a === b;
     }
 
+    function makeItem(item, tally, probability) {
+        return {
+            item: item,
+            tally: tally,
+            probability: probability
+        }
+    }
+
     /**
      * A collection class that retrieves elements by probability using the
      * roulette method
@@ -42,9 +50,17 @@
         this.autoinit = opts && 'autoinit' in opts ? !!opts.autoinit : false;
 
         // Private properties
-        this._tally = [];
+
+        /**
+         * Item data. Each item will be expressed as an object with the form:
+         *  { item, tally, probability }
+         *
+         * @property _data
+         * @private
+         * @type Array
+         */
+        this._data = [];
         this._total = 0;
-        this._wheel = [];
         this._compare = defaultCompare;
         this._aliases = null;
     }
@@ -62,14 +78,12 @@
 
             if(idx < 0) {
                 // item doesn't exist
-                idx = this.length;
-                this[idx] = item;
-                this.length++;
-                this._tally[idx] = 1;
+                this._data.push(makeItem(item, 1, 0));
+                this.length = this._data.length;
                 this._total++;
             } else {
                 // item exists - just increase probability
-                this._tally[idx]++;
+                this._data[idx].tally++;
                 this._total++;
             }
 
@@ -91,12 +105,12 @@
         remove: function(item) {
             var idx = this.indexOf(item);
             if(idx < 0) return this;
-            if(this._tally[idx] > 0) {
-                this._tally[idx]--;
+            if(this._data[idx].tally > 0) {
+                this._data[idx].tally--;
                 this._total--;
             }
 
-            if(!this._tally[idx]) {
+            if(!this._data[idx].tally) {
             }
             
             if(this.autoinit) this.setWeights();
@@ -115,9 +129,11 @@
         purge: function(item) {
             var idx = this.indexOf(item);
             if(idx < 0) return this;
-            var n = this._tally[idx];
-            this._tally[idx] = 0;
+            var n = this._data[idx].tally;
             this._total -= n;
+            this._data.splice(idx, 1);
+            this.length = this._data.length;
+            this.setWeights();
             return this;
         },
 
@@ -132,7 +148,7 @@
         indexOf: function(item) {
             if(!this.length) return -1;
             for (var i = 0, l = this.length; i < l; i ++) {
-                var e = this[i];
+                var e = this._data[i].item;
                 if(e == null) continue;
                 if(this._compare(item, e)) return i;
             }
@@ -148,7 +164,7 @@
          */
         search: function(item) {
             var idx = this.indexOf(item);
-            return idx >= 0 ? this[idx] : null;
+            return idx >= 0 ? this._data[idx].item : null;
         },
 
         /**
@@ -162,17 +178,17 @@
         get: function(idx) {
             if(!this.length) return null;
 
-            if(idx != null) {
+            if(typeof idx == "number") {
                 if(idx >= this.length || idx < 0) return null;
-                return this[idx];
+                return this._data[idx].item;
             }
 
             var rn = Math.random();
-            if(rn >= 1) return this[this.length - 1];
-            if(rn <= 0) return this[0];
+            if(rn >= 1) return this._data[this.length - 1].item;
+            if(rn <= 0) return this._data[0].item;
             for (var i = 0, l = this.length; i < l; i ++) {
-                var prob = this._wheel[i];
-                if(prob > rn) return this[i];
+                var prob = this._data[i].probability;
+                if(prob > rn) return this._data[i].item;
             }
 
             return null;
@@ -188,9 +204,9 @@
         setWeights: function() {
             if(!this._total) return this;
             for (var i = 0, l = this.length; i < l; i ++) {
-                var c = this._tally[i];
+                var c = this._data[i].tally;
                 var prob = c / this._total;
-                this._wheel[i] = i ? this._wheel[i - 1] + prob : prob;
+                this._data[i].probability = i ? this._data[i - 1].probability + prob : prob;
             }
             return this;
         },
