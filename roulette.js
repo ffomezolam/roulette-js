@@ -29,7 +29,6 @@
      * @class Roulette
      * @constructor
      * @param {Object} [opts] Options
-     * TODO: Implement aliases for string items
      */
     function Roulette(opts) {
         /**
