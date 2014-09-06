@@ -22,7 +22,9 @@
 
     /**
      * A collection class that retrieves elements by probability using the
-     * roulette method
+     * roulette method. Possible options:
+     *
+     *  autocalibrate (bool) - whether to automatically calibrate probabilities
      *
      * @class Roulette
      * @constructor
@@ -40,14 +42,24 @@
         this.length = 0;
 
         /**
-         * Whether addition and removal of items automatically initializes
+         * Whether addition and removal of items automatically calibrates
          * probabilities
          *
-         * @property autoinit
+         * @property autocalibrate
          * @type Boolean
          * @default false
          */
-        this.autoinit = opts && 'autoinit' in opts ? !!opts.autoinit : false;
+        this.autocalibrate = opts && 'autocalibrate' in opts ? !!opts.autocalibrate : false;
+
+        /**
+         * Whether to use string aliases. Requires strictly string or numeral
+         * inputs. Will throw away non-stringifiable inputs.
+         *
+         * @property aliases
+         * @type Boolean
+         * @default false
+         */
+        this.aliases = opts && 'aliases' in opts ? !!opts.aliases : false;
 
         // Private properties
 
@@ -62,7 +74,7 @@
         this._data = [];
         this._total = 0;
         this._compare = defaultCompare;
-        this._aliases = null;
+        this._aliases = this.aliases ? {} : null;
     }
 
     Roulette.prototype = {
@@ -71,23 +83,40 @@
          *
          * @method add
          * @chainable
-         * @param {any} item Item to add
+         * @param {any} item* Item(s) to add
          */
         add: function(item) {
-            var idx = this.indexOf(item);
+            if(arguments.length > 1) {
+                var autocal = this.autocalibrate;
+                if(autocal) this.autocalibrate = false; // turn off autocalibration during multiple additions
 
-            if(idx < 0) {
-                // item doesn't exist
-                this._data.push(makeItem(item, 1, 0));
-                this.length = this._data.length;
-                this._total++;
+                for(var i = 0, l = arguments.length; i < l; i++) {
+                    this.add(arguments[i]);
+                }
+
+                if(autocal) this.autocalibrate = true;
             } else {
-                // item exists - just increase probability
-                this._data[idx].tally++;
-                this._total++;
-            }
+                // don't allow non-string inputs if aliasing
+                if(this.aliases && (typeof item != 'string' && typeof item != 'number')) return this;
 
-            if(this.autoinit) this.setWeights();
+                var idx = this._indexOf(item);
+
+                if(idx < 0) {
+                    // item doesn't exist
+                    this._data.push(makeItem(item, 1, 0));
+                    this.length = this._data.length;
+                    this._total++;
+
+                    // add alias if appropriate
+                    if(this.aliases) this._aliases[item] = this.length - 1
+                } else {
+                    // item exists - just increase probability
+                    this._data[idx].tally++;
+                    this._total++;
+                }
+
+                if(this.autocalibrate) this.calibrate();
+            }
 
             return this;
         },
@@ -97,23 +126,38 @@
          *
          * @method remove
          * @chainable
-         * @param {any} item Item to remove
-         * TODO: can't subtract from length, because it is used for searching
-         * TODO: Somehow fill in empty indices created by item removal... or
-         * never remove them...
+         * @param {any} item* Item(s) to remove
          */
         remove: function(item) {
-            var idx = this.indexOf(item);
-            if(idx < 0) return this;
-            if(this._data[idx].tally > 0) {
-                this._data[idx].tally--;
-                this._total--;
-            }
+            if(arguments.length > 1) {
+                var autocal = this.autocalibrate;
+                if(autocal) this.autocalibrate = false;
 
-            if(!this._data[idx].tally) {
+                for(var i = 0, l = arguments.length; i < l; i++) {
+                    this.remove(arguments[i]);
+                }
+
+                if(autocal) this.autocalibrate = true;
+            } else {
+                var idx = this._indexOf(item);
+                if(idx < 0) return this;
+                if(this._data[idx].tally > 0) {
+                    this._data[idx].tally--;
+                    this._total--;
+                }
+
+                if(!this._data[idx].tally) {
+                    // item needs to be removed
+                    if(this.aliases) {
+                        delete this._aliases[item];
+                        this._realias(idx);
+                    }
+                    this._data.splice(idx, 1);
+                    this.length = this._data.length;
+                }
+                
+                if(this.autocalibrate) this.calibrate();
             }
-            
-            if(this.autoinit) this.setWeights();
 
             return this;
         },
@@ -124,34 +168,63 @@
          * @method purge
          * @chainable
          * @param {any} item Item to remove
-         * TODO: Finish implementing this
          */
         purge: function(item) {
-            var idx = this.indexOf(item);
+            var idx = this._indexOf(item);
             if(idx < 0) return this;
+
             var n = this._data[idx].tally;
             this._total -= n;
             this._data.splice(idx, 1);
             this.length = this._data.length;
-            this.setWeights();
+            if(this.aliases) {
+                delete this._aliases[item];
+                this._realias(idx);
+            }
+            
+            if(this.autocalibrate) this.calibrate();
+
+            return this;
+        },
+
+        /**
+         * Reset aliases if applicable
+         *
+         * @method _realias
+         * @private
+         * @chainable
+         * @param {Number} [s] Index to start at
+         */
+        _realias: function(s) {
+            if(typeof s != 'number' || s < 0) s = 0;
+            if(s > this.length - 1) return this;
+            for(var i = s, l = this.length; i < l; i++) {
+                var item = this._data[i].item;
+                this._aliases[item] = i;
+            }
             return this;
         },
 
         /**
          * Search for an item and return its index or -1 if not found
          *
-         * @method indexOf
+         * @method _indexOf
+         * @private
          * @param {any} item Item
          * @return {Number} Item index or -1 if not found
          * TODO: Linear search rulez
          */
-        indexOf: function(item) {
+        _indexOf: function(item) {
             if(!this.length) return -1;
+
+            if(this.aliases) return item in this._aliases ? this._aliases[item] : -1;
+
             for (var i = 0, l = this.length; i < l; i ++) {
                 var e = this._data[i].item;
                 if(e == null) continue;
                 if(this._compare(item, e)) return i;
             }
+
             return -1;
         },
 
@@ -163,7 +236,9 @@
          * @return {any} Item or null
          */
         search: function(item) {
-            var idx = this.indexOf(item);
+            if(this.aliases) return item in this._aliases ? item : null;
+
+            var idx = this._indexOf(item);
             return idx >= 0 ? this._data[idx].item : null;
         },
 
@@ -188,20 +263,20 @@
             if(rn <= 0) return this._data[0].item;
             for (var i = 0, l = this.length; i < l; i ++) {
                 var prob = this._data[i].probability;
-                if(prob > rn) return this._data[i].item;
+                if(prob > rn) return this._data[i].item; // pick first item which exceeds throw
             }
 
             return null;
         },
 
         /**
-         * Set the probabilities
+         * Adjust the probabilities
          *
-         * @method setWeights
+         * @method calibrate
          * @chainable
          * TODO: is there any better way to do this?
          */
-        setWeights: function() {
+        calibrate: function() {
             if(!this._total) return this;
             for (var i = 0, l = this.length; i < l; i ++) {
                 var c = this._data[i].tally;
