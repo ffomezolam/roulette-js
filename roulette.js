@@ -170,7 +170,7 @@
             var rn = Math.random();
             if(rn >= 1) return this[this.length - 1];
             if(rn <= 0) return this[0];
-            for (var i = 0, l = this._wheel.length; i < l; i ++) {
+            for (var i = 0, l = this.length; i < l; i ++) {
                 var prob = this._wheel[i];
                 if(prob > rn) return this[i];
             }
@@ -187,7 +187,7 @@
          */
         setWeights: function() {
             if(!this._total) return this;
-            for (var i = 0, l = this._tally.length; i < l; i ++) {
+            for (var i = 0, l = this.length; i < l; i ++) {
                 var c = this._tally[i];
                 var prob = c / this._total;
                 this._wheel[i] = i ? this._wheel[i - 1] + prob : prob;
