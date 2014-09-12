@@ -242,6 +242,17 @@
         },
 
         /**
+         * Check if item exists
+         *
+         * @method has
+         * @param {any} item Item
+         * @return {Boolean} Whether item exists in collection
+         */
+        has: function(item) {
+            return !!this.search(item);
+        },
+
+        /**
          * Get an item by index or randomly by weight
          *
          * @method get
