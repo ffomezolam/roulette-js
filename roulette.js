@@ -24,7 +24,8 @@
      * A collection class that retrieves elements by probability using the
      * roulette method. Possible options:
      *
-     *  autocalibrate (bool) - whether to automatically calibrate probabilities
+     *      autocalibrate (bool) - whether to automatically calibrate probabilities
+     *      aliases (bool) - whether to use string-only values for faster searching
      *
      * @class Roulette
      * @constructor
@@ -228,20 +229,6 @@
         },
 
         /**
-         * Search for an item and return it if found
-         *
-         * @method search
-         * @param {any} item Item
-         * @return {any} Item or null
-         */
-        search: function(item) {
-            if(this.aliases) return item in this._aliases ? item : null;
-
-            var idx = this._indexOf(item);
-            return idx >= 0 ? this._data[idx].item : null;
-        },
-
-        /**
          * Check if item exists
          *
          * @method has
@@ -249,23 +236,24 @@
          * @return {Boolean} Whether item exists in collection
          */
         has: function(item) {
-            return !!this.search(item);
+            return !!this.get(item);
         },
 
         /**
-         * Get an item by index or randomly by weight
+         * Get an item specifically or randomly by weight
          *
          * @method get
-         * @param {Number} [idx] Index
+         * @param {any} [item] Item
          * @return {any} Item
          * TODO: Linear search rulez agayne
          */
-        get: function(idx) {
+        get: function(item) {
+            if(this.aliases) return item in this._aliases ? item : null;
             if(!this.length) return null;
 
-            if(typeof idx == "number") {
-                if(idx >= this.length || idx < 0) return null;
-                return this._data[idx].item;
+            if(typeof item != 'undefined') {
+                var idx = this._indexOf(item);
+                return idx >= 0 ? this._data[idx].item : null;
             }
 
             var rn = Math.random();
