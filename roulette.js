@@ -99,7 +99,7 @@
                 // don't allow non-string inputs if aliasing
                 if(this.aliases && (typeof item != 'string' && typeof item != 'number')) return this;
 
-                var idx = this._indexOf(item);
+                var idx = this.indexOf(item);
 
                 if(idx < 0) {
                     // item doesn't exist
@@ -139,7 +139,7 @@
 
                 if(autocal) this.autocalibrate = true;
             } else {
-                var idx = this._indexOf(item);
+                var idx = this.indexOf(item);
                 if(idx < 0) return this;
                 if(this._data[idx].tally > 0) {
                     this._data[idx].tally--;
@@ -170,7 +170,7 @@
          * @param {any} item Item to remove
          */
         purge: function(item) {
-            var idx = this._indexOf(item);
+            var idx = this.indexOf(item);
             if(idx < 0) return this;
 
             var n = this._data[idx].tally;
@@ -208,13 +208,12 @@
         /**
          * Search for an item and return its index or -1 if not found
          *
-         * @method _indexOf
-         * @private
+         * @method indexOf
          * @param {any} item Item
          * @return {Number} Item index or -1 if not found
          * TODO: Linear search rulez
          */
-        _indexOf: function(item) {
+        indexOf: function(item) {
             if(!this.length) return -1;
 
             if(this.aliases) return item in this._aliases ? this._aliases[item] : -1;
@@ -236,25 +235,20 @@
          * @return {Boolean} Whether item exists in collection
          */
         has: function(item) {
-            return !!this.get(item);
+            return !!(this.indexOf(item) >= 0);
         },
 
         /**
-         * Get an item specifically or randomly by weight
+         * Get an item by index or randomly by weight
          *
          * @method get
-         * @param {any} [item] Item
+         * @param {Number} [idx] Item
          * @return {any} Item
          * TODO: Linear search rulez agayne
          */
-        get: function(item) {
-            if(this.aliases) return item in this._aliases ? item : null;
+        get: function(idx) {
             if(!this.length) return null;
-
-            if(typeof item != 'undefined') {
-                var idx = this._indexOf(item);
-                return idx >= 0 ? this._data[idx].item : null;
-            }
+            if(typeof idx == 'number' && idx >= 0 && idx < this.length) return this._data[idx].item;
 
             var rn = Math.random();
             if(rn >= 1) return this._data[this.length - 1].item;
