@@ -8,6 +8,13 @@
     else if(typeof define === 'function' && define.amd) define(definition);
     else context[name] = definition();
 })('Roulette', this, function() {
+    // utility function for determining data types
+    function is(t, o) {
+        t = t.toLowerCase();
+        var type = Object.prototype.toString.call(o).toLowerCase().slice(8, -1);
+        return type == t;
+    }
+
     function defaultCompare(a, b) {
         return a === b;
     }
@@ -25,7 +32,6 @@
      * roulette method. Possible options:
      *
      *      autocalibrate (bool) - whether to automatically calibrate probabilities
-     *      aliases (bool) - whether to use string-only values for faster searching
      *
      * @class Roulette
      * @constructor
@@ -47,19 +53,9 @@
          *
          * @property autocalibrate
          * @type Boolean
-         * @default false
+         * @default true
          */
-        this.autocalibrate = opts && 'autocalibrate' in opts ? !!opts.autocalibrate : false;
-
-        /**
-         * Whether to use string aliases. Requires strictly string or numeral
-         * inputs. Will throw away non-stringifiable inputs.
-         *
-         * @property aliases
-         * @type Boolean
-         * @default false
-         */
-        this.aliases = opts && 'aliases' in opts ? !!opts.aliases : false;
+        this.autocalibrate = opts && 'autocalibrate' in opts ? !!opts.autocalibrate : true;
 
         // Private properties
 
@@ -74,7 +70,7 @@
         this._data = [];
         this._total = 0;
         this._compare = defaultCompare;
-        this._aliases = this.aliases ? {} : null;
+        this._aliases = {};
     }
 
     Roulette.prototype = {
@@ -96,9 +92,6 @@
 
                 if(autocal) this.autocalibrate = true;
             } else {
-                // don't allow non-string inputs if aliasing
-                if(this.aliases && (typeof item != 'string' && typeof item != 'number')) return this;
-
                 var idx = this.indexOf(item);
 
                 if(idx < 0) {
@@ -108,7 +101,7 @@
                     this._total++;
 
                     // add alias if appropriate
-                    if(this.aliases) this._aliases[item] = this.length - 1
+                    if(is('string', item) || is('number', item)) this._aliases[item] = this.length - 1;
                 } else {
                     // item exists - just increase probability
                     this._data[idx].tally++;
@@ -148,7 +141,7 @@
 
                 if(!this._data[idx].tally) {
                     // item needs to be removed
-                    if(this.aliases) {
+                    if(is('string', item) || is('number', item)) {
                         delete this._aliases[item];
                         this._realias(idx);
                     }
@@ -177,7 +170,7 @@
             this._total -= n;
             this._data.splice(idx, 1);
             this.length = this._data.length;
-            if(this.aliases) {
+            if(is('string', item) || is('number', item)) {
                 delete this._aliases[item];
                 this._realias(idx);
             }
@@ -196,7 +189,7 @@
          * @param {Number} [s] Index to start at
          */
         _realias: function(s) {
-            if(typeof s != 'number' || s < 0) s = 0;
+            if(!is('number', s) || s < 0) s = 0;
             if(s > this.length - 1) return this;
             for(var i = s, l = this.length; i < l; i++) {
                 var item = this._data[i].item;
@@ -216,7 +209,8 @@
         indexOf: function(item) {
             if(!this.length) return -1;
 
-            if(this.aliases) return item in this._aliases ? this._aliases[item] : -1;
+            if(is('string', item) || is('number', item)) 
+                return item in this._aliases ? this._aliases[item] : -1;
 
             for (var i = 0, l = this.length; i < l; i ++) {
                 var e = this._data[i].item;
@@ -248,7 +242,10 @@
          */
         get: function(idx) {
             if(!this.length) return null;
-            if(typeof idx == 'number' && idx >= 0 && idx < this.length) return this._data[idx].item;
+            if(is('number', idx)) {
+                if(idx >= 0 && idx < this.length) return this._data[idx].item;
+                return null;
+            }
 
             var rn = Math.random();
             if(rn >= 1) return this._data[this.length - 1].item;
