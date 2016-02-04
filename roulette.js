@@ -31,7 +31,7 @@
      * A collection class that retrieves elements by probability using the
      * roulette method. Possible options:
      *
-     *      autocalibrate (bool) - whether to automatically calibrate probabilities
+     *      autocalibrate (bool) - whether to automatically calibrate probabilities (default true)
      *
      * @class Roulette
      * @constructor
@@ -148,7 +148,7 @@
                     this._data.splice(idx, 1);
                     this.length = this._data.length;
                 }
-                
+
                 if(this.autocalibrate) this.calibrate();
             }
 
@@ -174,7 +174,7 @@
                 delete this._aliases[item];
                 this._realias(idx);
             }
-            
+
             if(this.autocalibrate) this.calibrate();
 
             return this;
@@ -209,7 +209,7 @@
         indexOf: function(item) {
             if(!this.length) return -1;
 
-            if(is('string', item) || is('number', item)) 
+            if(is('string', item) || is('number', item))
                 return item in this._aliases ? this._aliases[item] : -1;
 
             for (var i = 0, l = this.length; i < l; i ++) {
