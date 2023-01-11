@@ -1,7 +1,9 @@
 # roulette
 
-Javascript collection class implementing the Roulette Method for weighted random sampling.
+Helper functions and collection class implementing the Roulette Method for weighted random sampling.
 
-## Documentation
+This is the first iteration and is not fully optimized.
 
-See source or use yuidoc to generate documentation
+## News
+
+- Eleventh of January, 2023: Now updated to modern javascript!
