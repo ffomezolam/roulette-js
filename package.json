@@ -1,0 +1,25 @@
+{
+  "name": "roulette",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Javascript collection class implementing the Roulette Method for weighted random sampling.",
+  "main": "roulette.js",
+  "devDependencies": {
+    "chai": "*",
+    "mocha": "*"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ffomezolam/roulette.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ffomezolam/roulette/issues"
+  },
+  "homepage": "https://github.com/ffomezolam/roulette#readme"
+}
