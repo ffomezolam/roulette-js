@@ -88,8 +88,8 @@ function equal(a, b) {
  * roulette method.
  *
  * Can pass an optional comparison function to use when comparing items.
- * Default is deep equality.
- * Pass `{ comparison: <function> }` to set an alternate equality function.
+ * Default is deep equality of primitives.
+ * Pass `{ comparison: <function> }` to set an alternate comparison function.
  */
 class Roulette {
     constructor(opts) {
