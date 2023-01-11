@@ -295,18 +295,14 @@ describe('>Roulette.js', function() {
                 r.add(items[2]);
 
                 // set up results array to store count of items
-                let results = [];
+                let results = [0,0,0];
                 let nresults = 1000;
 
                 // run a lot of times, store counts
                 for(let i = 0; i < nresults; i++) {
                     let result = r.get();
                     let idx = r.indexOf(result);
-                    if(result in results) {
-                        results[idx]++;
-                    } else {
-                        results[idx] = 1;
-                    }
+                    results[idx]++;
                 }
 
                 // specify ratios of counts for each item
@@ -323,11 +319,14 @@ describe('>Roulette.js', function() {
             it('should adjust weights if specified', function() {
                 // confirm item counts are correct
                 for(let i = 0; i < 3; i++) {
-                    assert.equal(r.countOf(items[i], i+1));
+                    assert.equal(r.countOf(items[i]), i+1);
                 }
 
                 // store item counts
-                let counts = r._counts;
+                let counts = [];
+                for(let count of r._counts) {
+                    counts.push(count);
+                }
 
                 // set up exponent to use for weighting
                 let exp = 2;
@@ -337,8 +336,38 @@ describe('>Roulette.js', function() {
                     counts[idx] = counts[idx] ** exp;
                 }
 
+                // make sure counts are stored correctly
                 for(let i = 0; i < 3; i++) {
-                    assert.equal()
+                    assert.equal(counts[i], r._counts[i] ** exp);
+                }
+
+                // get total new counts
+                let total = 0;
+                for(let count of counts) {
+                    total += count;
+                }
+
+                let results = [0,0,0];
+                let nresults = 1000;
+
+                // run a lot of times, store counts
+                for(let i = 0; i < nresults; i++) {
+                    let result = r.get(exp);
+                    let idx = r.indexOf(result);
+                    results[idx]++;
+                }
+
+                // get ratios
+                let ratios = []
+                for(let count of counts) {
+                    ratios.push(count / total);
+                }
+
+                // test that results are close to actual ratios
+                for(let idx in results) {
+                    let rat = results[idx] / nresults;
+
+                    assert.closeTo(rat, ratios[idx], 0.1);
                 }
             })
         })
