@@ -1,5 +1,4 @@
 .*
 _*
-test*
 !.gitignore
 node_modules
