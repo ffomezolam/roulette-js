@@ -96,7 +96,10 @@ class Roulette {
         /** Number of items */
         this.length = 0;
 
-        /** Instance options */
+        /**
+        * Instance options
+        * @private
+        */
         this._opts = {
             /** Comparison function */
             comparison: getopt('comparison', opts, equal)
@@ -117,17 +120,25 @@ class Roulette {
 
     /**
      * Check if has item. Will return true if item count is 0.
+     *
+     * NOTE: may need optimization to avoid linear search
+     *
+     * @param {any} item - item to test for
      */
     has(item) {
-        for(let i in this._items) {
-            if(this._opts.comparison(item, this._items[i])) return true;
-        }
+        let idx = this.indexOf(item);
 
-        return false;
+        if(idx < 0) return false;
+
+        return true;
     }
 
     /**
-     * Get index of item or -1 if not found
+     * Get index of item or -1 if not found.
+     *
+     * NOTE: may need optimization to avoid linear search
+     *
+     * @param {any} item - item to test for
      */
     indexOf(item) {
         for(let i = 0; i < this._items.length; i++) {
@@ -139,6 +150,8 @@ class Roulette {
 
     /**
      * Get item at index or undefined if out of range
+     *
+     * @param {int} idx - index
      */
     at(idx) {
         // index out of bounds check
@@ -151,6 +164,8 @@ class Roulette {
 
     /**
      * Get item count.
+     *
+     * @param {any} item - item to test for
      */
     countOf(item) {
         let idx = this.indexOf(item);
@@ -162,6 +177,8 @@ class Roulette {
 
     /**
      * Get item count at index.
+     *
+     * @param {int} idx - index
      */
     countAt(idx) {
         // index out of bounds check
@@ -174,6 +191,8 @@ class Roulette {
 
     /**
      * Add an item to the collection. Returns item count.
+     *
+     * @param {any} item - item to add
      */
     add(item) {
         let idx = this.indexOf(item);
@@ -194,6 +213,8 @@ class Roulette {
 
     /**
      * Remove single instance of item. Returns item count or -1.
+     *
+     * @param {any} item - item to remove
      */
     remove(item) {
         let idx = this.indexOf(item);
@@ -212,6 +233,8 @@ class Roulette {
      * Remove item entirely by setting count to 0.
      * Does not delete item from collection.
      * Returns index of item.
+     *
+     * @param {any} item - item to purge
      */
     purge(item) {
         let idx = this.indexOf(item);
@@ -227,6 +250,8 @@ class Roulette {
      * Delete item from collection, shifting others. Changes indexing.
      * Probably useful to prevent un-collectable references.
      * Returns index of splice or -1.
+     *
+     * @param {any} item - item to delete
      */
     delete(item) {
         let idx = this.indexOf(item);
