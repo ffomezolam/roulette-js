@@ -11,7 +11,13 @@ import {roulette} from './helpers.js';
  */
 function getopt(opt, opts, def, bool = false) {
     // no options provided
-    if(!opts) return undefined
+    if(!opts) {
+        // default provided - return default
+        if(def) return def;
+
+        // no default - return undefined
+        return undefined
+    }
 
     // option not specified - return default
     if(!(opt in opts)) return def
@@ -27,6 +33,9 @@ function getopt(opt, opts, def, bool = false) {
  * Helper function to test equality for non-primitives
  *
  * Inspired by git.github.com/nicbell/6081098
+ *
+ * NOTE: I'm still deciding how to best handle complex items.
+ * Currently, objects and arrays are compared by internal primitive values.
  */
 function equal(a, b) {
     // null equals null and undefined equals undefined
@@ -77,6 +86,10 @@ function equal(a, b) {
 /**
  * A collection class that retrieves elements by probability using the
  * roulette method.
+ *
+ * Can pass an optional comparison function to use when comparing items.
+ * Default is deep equality.
+ * Pass `{ comparison: <function> }` to set an alternate equality function.
  */
 class Roulette {
     constructor(opts) {
@@ -84,9 +97,9 @@ class Roulette {
         this.length = 0;
 
         /** Instance options */
-        this.opts = {
-            /** Autocalibrate flag */
-            autocalibrate: getopt('autocalibrate', opts, true, true)
+        this._opts = {
+            /** Comparison function */
+            comparison: getopt('comparison', opts, equal)
         }
 
         /**
@@ -107,7 +120,7 @@ class Roulette {
      */
     has(item) {
         for(let i in this._items) {
-            if(equal(item, this._items[i])) return true;
+            if(this._opts.comparison(item, this._items[i])) return true;
         }
 
         return false;
@@ -118,7 +131,7 @@ class Roulette {
      */
     indexOf(item) {
         for(let i = 0; i < this._items.length; i++) {
-            if(equal(item, this._items[i])) return i;
+            if(this._opts.comparison(item, this._items[i])) return i;
         }
 
         return -1;

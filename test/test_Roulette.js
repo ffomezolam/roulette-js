@@ -13,10 +13,17 @@ describe('>Roulette.js', function() {
             'test': function() { return ':)' }
         }
 
-        it('should return undefined if no opts', function() {
+        it('should return undefined if no opts and no default', function() {
             let result = getopt('opt');
 
             assert.isUndefined(result);
+        })
+
+        it('should return default if no opts and has default', function() {
+            let d = 'a';
+            let result = getopt('opt', undefined, d);
+
+            assert.equal(result, d)
         })
 
         it('should return undefined if option not in opts', function() {
@@ -34,7 +41,7 @@ describe('>Roulette.js', function() {
         })
 
         it('should return the value if opt in opts', function() {
-            let opt = 'a';
+            let opt = 'd';
             let result = getopt(opt, opts);
 
             assert.equal(result, opts[opt]);
@@ -154,6 +161,10 @@ describe('>Roulette.js', function() {
         r._items.push(items[1]);
         r._counts.push(2);
         r.length = 2;
+
+        it('should default to equal comparison function', function() {
+            assert.strictEqual(r._opts.comparison, _private.equal);
+        })
 
         describe('#has', function() {
             it('should return true if item in collection', function() {
