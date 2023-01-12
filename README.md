@@ -2,7 +2,7 @@
 
 Javascript helper functions and collection class implementing the Roulette Method for weighted random sampling.
 
-This is the first iteration and is not fully optimized.
+This is the first iteration in modern javascript and is not fully optimized.
 
 ## News
 
