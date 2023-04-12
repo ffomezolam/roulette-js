@@ -71,67 +71,8 @@ function hash(o, s = "") {
 }
 
 /**
- * Helper function to test equality for non-primitives
- *
- * Inspired by git.github.com/nicbell/6081098
- *
- * NOTE: I'm still deciding how to best handle complex items.
- * Currently, objects and arrays are compared by internal primitive values.
- */
-function equal(a, b) {
-    // null equals null and undefined equals undefined
-    if(a === null && b === null) return true;
-    if(a === undefined && b === undefined) return true;
-
-    // unequal types are not equal
-    if(typeof(a) != typeof(b)) return false;
-
-    // if primitive type, compare values
-    let type = typeof(a);
-    if(type == 'boolean' || type == 'number' || type == 'string') {
-        return a == b;
-    }
-
-    // array test
-    if(Array.isArray(a)) {
-        // array type test
-        if(!Array.isArray(b)) return false;
-
-        // array length test
-        if(a.length != b.length) return false;
-
-        // test elements
-        for(let i = 0; i < a.length; i++) {
-            if(!equal(a[i], b[i])) return false;
-        }
-
-        return true;
-    } else {
-        // object test
-
-        // test for properties
-        for(var p in a) {
-            if(a.hasOwnProperty(p) != b.hasOwnProperty(p)) return false;
-
-            if(!equal(a[p], b[p])) return false;
-        }
-
-        // test for missed properties
-        for(var p in b) {
-            if(typeof(a[p]) == 'undefined') return false;
-        }
-
-        return true;
-    }
-}
-
-/**
  * A collection class that retrieves elements by probability using the
  * roulette method.
- *
- * Can pass an optional comparison function to use when comparing items.
- * Default is deep equality of primitives.
- * Pass `{ comparison: <function> }` to set an alternate comparison function.
  */
 class Roulette {
     static makeItem(o) {
@@ -146,25 +87,10 @@ class Roulette {
         this.length = 0;
 
         /**
-        * Instance options
-        * @private
-        */
-        this._opts = {
-            /** Comparison function */
-            comparison: getopt('comparison', opts, equal)
-        }
-
-        /**
          * Collection items
          * @private
          */
         this._items = {};
-
-        /**
-         * Item counts
-         * @private
-        this._counts = [];
-         */
     }
 
     /**
@@ -284,7 +210,6 @@ class Roulette {
 
 let _private = {
     getopt,
-    equal,
     hash
 }
 
