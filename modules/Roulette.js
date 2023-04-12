@@ -30,6 +30,42 @@ function getopt(opt, opts, def, bool = false) {
 }
 
 /**
+ * Helper function to brute-force hash non-primitives.
+ *
+ * This essentially turns non-primitives into a string representation of their
+ * properties. This differs from json.stringify in that object properties are
+ * sorted so there should be no problem with comparing hashes of objects with
+ * the same properties in different order
+ */
+function hash(o, s = "") {
+    let type = typeof(o);
+
+    if(type == 'boolean' || type == 'number' || type == 'string') {
+        // primitives hash to string of themselves
+        return String(o);
+    } else if(Array.isArray(o)) {
+        // array test
+        s = '[';
+        for(let i = 0; i < o.length; i++) {
+            s += hash(o[i]) + ',';
+        }
+        s += ']';
+    } else {
+        // object test
+        s = '{';
+        let props = Object.keys(o)
+        // sort properties to maintain consistency over similar objects
+        props.sort()
+        for(let i = 0; i < props.length; i++) {
+            let p = props[i]
+            s += p + ':' + hash(o[p]) + ',';
+        }
+        s += '}';
+    }
+    return s
+}
+
+/**
  * Helper function to test equality for non-primitives
  *
  * Inspired by git.github.com/nicbell/6081098
@@ -51,11 +87,12 @@ function equal(a, b) {
         return a == b;
     }
 
-    // array type test
-    if(Array.isArray(a) != Array.isArray(b)) return false;
-
     // array test
     if(Array.isArray(a)) {
+        // array type test
+        if(!Array.isArray(b)) return false;
+
+        // array length test
         if(a.length != b.length) return false;
 
         // test elements
@@ -116,77 +153,6 @@ class Roulette {
          * @private
          */
         this._counts = [];
-    }
-
-    /**
-     * Check if has item. Will return true if item count is 0.
-     *
-     * NOTE: may need optimization to avoid linear search
-     *
-     * @param {any} item - item to test for
-     */
-    has(item) {
-        let idx = this.indexOf(item);
-
-        if(idx < 0) return false;
-
-        return true;
-    }
-
-    /**
-     * Get index of item or -1 if not found.
-     *
-     * NOTE: may need optimization to avoid linear search
-     *
-     * @param {any} item - item to test for
-     */
-    indexOf(item) {
-        for(let i = 0; i < this._items.length; i++) {
-            if(this._opts.comparison(item, this._items[i])) return i;
-        }
-
-        return -1;
-    }
-
-    /**
-     * Get item at index or undefined if out of range
-     *
-     * @param {int} idx - index
-     */
-    at(idx) {
-        // index out of bounds check
-        if(idx < 0 || idx >= this._items.length) {
-            return undefined;
-        }
-
-        return this._items[idx];
-    }
-
-    /**
-     * Get item count.
-     *
-     * @param {any} item - item to test for
-     */
-    countOf(item) {
-        let idx = this.indexOf(item);
-
-        if(idx < 0) return 0; // item doesn't exist
-
-        return this._counts[idx];
-    }
-
-    /**
-     * Get item count at index.
-     *
-     * @param {int} idx - index
-     */
-    countAt(idx) {
-        // index out of bounds check
-        if(idx < 0 || idx >= this._items.length) {
-            return 0;
-        }
-
-        return this._counts[idx];
     }
 
     /**
@@ -264,6 +230,78 @@ class Roulette {
         return idx; // return index of item removed
     }
 
+
+    /**
+     * Check if has item. Will return true if item count is 0.
+     *
+     * NOTE: may need optimization to avoid linear search
+     *
+     * @param {any} item - item to test for
+     */
+    has(item) {
+        let idx = this.indexOf(item);
+
+        if(idx < 0) return false;
+
+        return true;
+    }
+
+    /**
+     * Get index of item or -1 if not found.
+     *
+     * NOTE: may need optimization to avoid linear search
+     *
+     * @param {any} item - item to test for
+     */
+    indexOf(item) {
+        for(let i = 0; i < this._items.length; i++) {
+            if(this._opts.comparison(item, this._items[i])) return i;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Get item at index or undefined if out of range
+     *
+     * @param {int} idx - index
+     */
+    at(idx) {
+        // index out of bounds check
+        if(idx < 0 || idx >= this._items.length) {
+            return undefined;
+        }
+
+        return this._items[idx];
+    }
+
+    /**
+     * Get item count.
+     *
+     * @param {any} item - item to test for
+     */
+    countOf(item) {
+        let idx = this.indexOf(item);
+
+        if(idx < 0) return 0; // item doesn't exist
+
+        return this._counts[idx];
+    }
+
+    /**
+     * Get item count at index.
+     *
+     * @param {int} idx - index
+     */
+    countAt(idx) {
+        // index out of bounds check
+        if(idx < 0 || idx >= this._items.length) {
+            return 0;
+        }
+
+        return this._counts[idx];
+    }
+
     /**
      * Get item by weighted random selection
      *
@@ -296,7 +334,8 @@ class Roulette {
 
 let _private = {
     getopt,
-    equal
+    equal,
+    hash
 }
 
 export {Roulette, _private}
