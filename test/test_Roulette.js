@@ -181,6 +181,7 @@ describe('>Roulette.js', function() {
         })
     })
 
+    // TODO: Need to test with real complex object, i.e. class
     describe('Roulette', function() {
         let items = [1,2,3,4]
 
