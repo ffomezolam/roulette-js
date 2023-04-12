@@ -36,6 +36,9 @@ function getopt(opt, opts, def, bool = false) {
  * properties. This differs from json.stringify in that object properties are
  * sorted so there should be no problem with comparing hashes of objects with
  * the same properties in different order
+ *
+ * NOTE: Should I distinguish between strings and numbers here? Should '2' be
+ * the same or different than 2?
  */
 function hash(o, s = "") {
     let type = typeof(o);
@@ -47,7 +50,8 @@ function hash(o, s = "") {
         // array test
         s = '[';
         for(let i = 0; i < o.length; i++) {
-            s += hash(o[i]) + ',';
+            s += hash(o[i]);
+            if(i < o.length - 1) s += ',';
         }
         s += ']';
     } else {
@@ -58,7 +62,8 @@ function hash(o, s = "") {
         props.sort()
         for(let i = 0; i < props.length; i++) {
             let p = props[i]
-            s += p + ':' + hash(o[p]) + ',';
+            s += p + ':' + hash(o[p]);
+            if(i < props.length - 1) s += ',';
         }
         s += '}';
     }
@@ -129,6 +134,13 @@ function equal(a, b) {
  * Pass `{ comparison: <function> }` to set an alternate comparison function.
  */
 class Roulette {
+    static makeItem(o) {
+        return {
+            "value": o,
+            "count": 1
+        }
+    }
+
     constructor(opts) {
         /** Number of items */
         this.length = 0;
@@ -146,13 +158,13 @@ class Roulette {
          * Collection items
          * @private
          */
-        this._items = [];
+        this._items = {};
 
         /**
          * Item counts
          * @private
-         */
         this._counts = [];
+         */
     }
 
     /**
@@ -161,20 +173,19 @@ class Roulette {
      * @param {any} item - item to add
      */
     add(item) {
-        let idx = this.indexOf(item);
+        // get item hash
+        let itemhash = hash(item)
 
-        // item doesn't exist - add
-        if(idx < 0) {
-            this._items.push(item);
-            this._counts.push(1);
+        if(!(itemhash in this._items)) {
+            // item doesn't exist - add
+            this._items[itemhash] = Roulette.makeItem(item)
             this.length++;
-            return this._items.length - 1;
+        } else {
+            // item exists - increase count
+            this._items[itemhash].count++
         }
 
-        // item exists - increase count
-        this._counts[idx]++;
-
-        return this._counts[idx];
+        return this._items[itemhash].count
     }
 
     /**
@@ -183,123 +194,79 @@ class Roulette {
      * @param {any} item - item to remove
      */
     remove(item) {
-        let idx = this.indexOf(item);
+        let itemhash = hash(item)
 
-        if(idx < 0) return 0; // item doesn't exist
-        if(this._counts[idx] <= 0) return 0; // item has 0 count
+        if(!(itemhash in this._items)) return -1; // item doesn't exist
+        if(this._items[itemhash].count <= 0) return 0; // item has 0 count
 
-        this._counts[idx]--; // subtract 1 from count
-        if(this._counts[idx] < 0) this._counts[idx] = 0; // min count is 0
+        this._items[itemhash].count--; // subtract 1 from count
+        if(this._items[itemhash].count < 0) this._items[itemhash].count = 0; // min count is 0
 
         // return item count
-        return this._counts[idx];
+        return this._items[itemhash].count;
     }
 
     /**
      * Remove item entirely by setting count to 0.
      * Does not delete item from collection.
-     * Returns index of item.
+     * Returns 0 on success or -1 if item doesn't exist.
      *
      * @param {any} item - item to purge
      */
     purge(item) {
-        let idx = this.indexOf(item);
+        let itemhash = hash(item)
 
-        if(idx < 0) return -1; // item doesn't exist
+        if(!(itemhash in this._items)) return -1; // item doesn't exist
 
-        this._counts[idx] = 0;
+        this._items[itemhash].count = 0;
 
-        return idx;
+        return 0
     }
 
     /**
-     * Delete item from collection, shifting others. Changes indexing.
+     * Delete item from collection.
      * Probably useful to prevent un-collectable references.
-     * Returns index of splice or -1.
+     * Returns 0 on success or -1 if item doesn't exist.
      *
      * @param {any} item - item to delete
      */
     delete(item) {
-        let idx = this.indexOf(item);
-        if(idx < 0) return -1; // item doesn't exist
+        let itemhash = hash(item);
 
-        // splice arrays to remove item and count
-        this._items.splice(idx, 1);
-        this._counts.splice(idx, 1);
+        if(!(itemhash in this._items)) return -1; // item doesn't exist
 
-        return idx; // return index of item removed
+        // remove item
+        delete this._items[itemhash]
+
+        return 0; // return index of item removed
     }
 
 
     /**
      * Check if has item. Will return true if item count is 0.
      *
-     * NOTE: may need optimization to avoid linear search
-     *
      * @param {any} item - item to test for
      */
     has(item) {
-        let idx = this.indexOf(item);
+        let itemhash = hash(item)
 
-        if(idx < 0) return false;
+        if(!(itemhash in this._items)) return false;
 
         return true;
     }
 
     /**
-     * Get index of item or -1 if not found.
-     *
-     * NOTE: may need optimization to avoid linear search
-     *
-     * @param {any} item - item to test for
-     */
-    indexOf(item) {
-        for(let i = 0; i < this._items.length; i++) {
-            if(this._opts.comparison(item, this._items[i])) return i;
-        }
-
-        return -1;
-    }
-
-    /**
-     * Get item at index or undefined if out of range
-     *
-     * @param {int} idx - index
-     */
-    at(idx) {
-        // index out of bounds check
-        if(idx < 0 || idx >= this._items.length) {
-            return undefined;
-        }
-
-        return this._items[idx];
-    }
-
-    /**
      * Get item count.
+     * Return -1 if item doesn't exist, otherwise return item count.
      *
      * @param {any} item - item to test for
      */
     countOf(item) {
-        let idx = this.indexOf(item);
+        let itemhash = hash(item)
 
-        if(idx < 0) return 0; // item doesn't exist
+        if(!(itemhash in this._items)) return -1; // item doesn't exist
 
-        return this._counts[idx];
-    }
-
-    /**
-     * Get item count at index.
-     *
-     * @param {int} idx - index
-     */
-    countAt(idx) {
-        // index out of bounds check
-        if(idx < 0 || idx >= this._items.length) {
-            return 0;
-        }
-
-        return this._counts[idx];
+        return this._items[itemhash].count;
     }
 
     /**
@@ -308,27 +275,10 @@ class Roulette {
      * @param {number} weight - exponential weight adjustment
      */
     get(weight = 1) {
-        let items = [];
-        let weights = [];
+        let items = Object.values(this._items).filter(item => item.count > 0)
 
-        // get active items
-        for(let i = 0; i < this._counts.length; i++) {
-            if(this._counts[i]) {
-                // item exists and has instances
-                items.push(this._items[i]);
-                weights.push(this._counts[i]);
-            }
-        }
-
-        // adjust weights if necessary
-        if(weight != 1) {
-            for(let i = 0; i < weights.length; i++) {
-                weights[i] = weights[i] ** weight;
-            }
-        }
-
-        // get random item
-        return roulette(items, weights)
+        // adjust weights and get random item
+        return roulette(items.map(item => item.value), items.map(item => item.count ** weight))
     }
 }
 

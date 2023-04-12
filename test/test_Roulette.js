@@ -53,6 +53,34 @@ describe('>Roulette.js', function() {
         })
     })
 
+    describe('hash', function() {
+        let hash = _private.hash
+
+        it('should return string rep of number primitives', function() {
+            assert.equal(hash(1), '1')
+        })
+
+        it('should return string rep of boolean primitives', function() {
+            assert.equal(hash(true), 'true')
+        })
+
+        it('should return string if string primitive', function() {
+            assert.equal(hash('i am silly'), 'i am silly')
+        })
+
+        it('should return string version of array', function() {
+            assert.equal(hash([1,2,3,4]), '[1,2,3,4]')
+        })
+
+        it('should return string version of object', function() {
+            assert.equal(hash({1:2, 3:4}), '{1:2,3:4}')
+        })
+
+        it('should return string version of complex objects', function() {
+            assert.equal(hash({'a':1, 'b':[2,3,{'c':4},5],'d':6,'e':7}),'{a:1,b:[2,3,{c:4},5],d:6,e:7}')
+        })
+    })
+
     describe('equal', function() {
         let equal = _private.equal
 
@@ -154,127 +182,85 @@ describe('>Roulette.js', function() {
     })
 
     describe('Roulette', function() {
-        let items = ['a','b','c']
-        let r = new Roulette();
-        r._items.push(items[0]);
-        r._counts.push(1);
-        r._items.push(items[1]);
-        r._counts.push(2);
-        r.length = 2;
+        let items = [1,2,3,4]
 
-        it('should default to equal comparison function', function() {
-            assert.strictEqual(r._opts.comparison, _private.equal);
-        })
+        describe('#constructor', function() {
+            let r = new Roulette();
 
-        describe('#has', function() {
-            it('should return true if item in collection', function() {
-                assert.isTrue(r.has(items[0]));
-                assert.isTrue(r.has(items[1]));
-            })
-
-            it('should return false if item not in collection', function() {
-                assert.isFalse(r.has(items[2]));
-            })
-        })
-
-        describe('#indexOf', function() {
-            it('should return index if item in collection', function() {
-                assert.strictEqual(r.indexOf(items[0]), 0);
-                assert.strictEqual(r.indexOf(items[1]), 1);
-            })
-
-            it('should return -1 if item not in collection', function() {
-                assert.strictEqual(r.indexOf(items[2]), -1);
-            })
-        })
-
-        describe('#at', function() {
-            it('should return item at index', function() {
-                assert.strictEqual(r.at(0), items[0]);
-                assert.strictEqual(r.at(1), items[1]);
-            })
-
-            it('should return undefined if out of range', function() {
-                assert.isUndefined(r.at(2));
-            })
-        })
-
-        describe('#countOf', function() {
-            it('should return item count', function() {
-                assert.strictEqual(r.countOf(items[0]), 1);
-                assert.strictEqual(r.countOf(items[1]), 2);
-            })
-
-            it('should return 0 if item does not exist', function() {
-                assert.strictEqual(r.countOf(items[2]), 0);
-            })
-        })
-
-        describe('#countAt', function() {
-            it('should return count at index', function() {
-                assert.strictEqual(r.countAt(0), 1);
-                assert.strictEqual(r.countAt(1), 2);
-            })
-
-            it('should return 0 if out of range', function() {
-                assert.strictEqual(r.countAt(2), 0);
+            it('should start with 0 length', function() {
+                assert.equal(r.length, 0);
             })
         })
 
         describe('#add', function() {
-            it('should expand collection if necessary', function() {
-                r.add(items[2]);
-                assert.equal(r.length, 3);
+            let r = new Roulette();
+
+            it('should expand collection on new item', function() {
+                r.add(items[0])
+                r.add(items[1])
+
+                assert.equal(r.length, 2);
+            })
+
+            it('should not expand collection on existing item', function() {
+                r.add(items[1]);
+
+                assert.equal(r.length, 2);
             })
 
             it('should increase item count if necessary', function() {
-                r.add(items[2]);
-                assert.equal(r.countOf(items[2]), 2);
+                assert.equal(r._items[items[1]].count, 2);
             })
 
             it('should return item count', function() {
-                let count = r.add(items[2]);
+                let count = r.add(items[1]);
                 assert.equal(count, 3);
             })
         })
 
         describe('#remove', function() {
+            let r = new Roulette();
+            let n = 3;
+
+            for(let i = 0; i < n; i++) {
+                r.add(items[1])
+            }
+
             it('should decrease item count', function() {
-                r.remove(items[2]);
+                r.remove(items[1]);
 
-                assert.equal(r.countOf(items[2]), 2);
-
-                r.remove(items[2]);
-
-                assert.equal(r.countOf(items[2]), 1);
-
-                r.remove(items[2]);
-
-                assert.equal(r.countOf(items[2]), 0);
+                assert.equal(r._items[items[1]].count, n - 1);
             })
 
             it('should not decrease item count below 0', function() {
-                r.remove(items[2]);
-                assert.equal(r.countOf(items[2]), 0);
+                for(let i = 0; i < 10; i++) {
+                    r.remove(items[1]);
+                }
+                assert.equal(r._items[items[1]].count, 0);
             })
 
             it('should not delete item', function() {
-                assert.isTrue(r.has(items[2]));
+                assert.isTrue(items[1] in r._items)
             })
 
             it('should return item count', function() {
-                let count = r.add(items[2]);
-                assert.equal(r.countOf(items[2]), 1);
-                count = r.remove(items[2]);
-                assert.equal(r.countOf(items[2]), 0);
+                for(let i = 0; i < 10; i++) {
+                    r.remove(items[1])
+                }
+                r.add(items[1])
+                r.add(items[1])
+                let count = r.remove(items[1]);
+                assert.equal(r._items[items[1]].count, 1);
             })
 
-            it('should return 0 if no item in collection', function() {
-                assert.strictEqual(r.remove('d'), 0);
+            it('should return -1 if no item in collection', function() {
+                assert.strictEqual(r.remove('d'), -1);
             })
         })
 
         describe('#purge', function() {
+            let r = new Roulette();
+
             it('should set item count to 0', function() {
                 r.add(items[2]);
                 r.add(items[2]);
@@ -285,100 +271,144 @@ describe('>Roulette.js', function() {
                 assert.equal(r.countOf(items[2]), 0);
             })
 
-            it('should return item index', function() {
+            it('should return 0 on success', function() {
                 r.add(items[2]);
-                assert.equal(r.purge(items[2]), 2);
+                assert.equal(r.purge(items[2]), 0);
+            })
+
+            it('should return -1 if item does not exist', function() {
+                assert.equal(r.purge('d'), -1);
+            })
+        })
+
+        describe('#delete', function() {
+            let r = new Roulette();
+
+            for(let i = 0; i < 4; i++) {
+                r.delete(items[i])
+            }
+
+            for(let i = 0; i < 4; i++) {
+                it('should delete item ' + items[i], function() {
+                    assert.isFalse(items[i] in r._items)
+                })
+            }
+        })
+
+        describe('#has', function() {
+            let r = new Roulette();
+            let adds = 2
+
+            for(let i = 0; i < adds; i++) {
+                r.add(items[i])
+            }
+
+            for(let i = 0; i < adds; i++) {
+                it('should return true if item ' + items[i] + ' in collection', function() {
+                    assert.isTrue(r.has(items[i]));
+                })
+            }
+
+            it('should return false if item not in collection', function() {
+                assert.isFalse(r.has(items[adds + 1]));
+            })
+
+            it('should return true if item has 0 count', function() {
+                r.purge(items[0])
+                assert.isTrue(r.has(items[0]))
+            })
+        })
+
+        describe('#countOf', function() {
+            let r = new Roulette();
+            let n = 2;
+
+            // this will add 1 of item 1, 2 of item 2, etc...
+            for(let i = 0; i < n; i++) {
+                for(let j = 0; j <= i; j++) {
+                    r.add(items[i])
+                }
+            }
+
+            for(let i = 0; i < n; i++) {
+                it('should return item count for item ' + items[i], function() {
+                    assert.strictEqual(r.countOf(items[i]), i + 1);
+                })
+            }
+
+            it('should return -1 if item does not exist', function() {
+                assert.strictEqual(r.countOf(items[n+1]), -1);
             })
         })
 
         describe('#get', function() {
+            let r = new Roulette()
+
+            // add items with varying counts
+            r.add(items[0]);
+            r.add(items[1]);
+            r.add(items[1]);
+            r.add(items[2]);
+            r.add(items[2]);
+            r.add(items[2]);
+
             it('should return items according to weight', function() {
-                for(let i = 0; i < 3; i++) {
-                    r.purge(items[i]); // purge all items
-                }
+                let counts = {};
+                let nruns = 1000;
+                let rats = {1:1/6, 2:2/6, 3:3/6}
 
-                // add items with varying counts
-                r.add(items[0]);
-                r.add(items[1]);
-                r.add(items[1]);
-                r.add(items[2]);
-                r.add(items[2]);
-                r.add(items[2]);
-
-                // set up results array to store count of items
-                let results = [0,0,0];
-                let nresults = 1000;
-
-                // run a lot of times, store counts
-                for(let i = 0; i < nresults; i++) {
+                // run a lot of times and store counts
+                for(let i = 0; i < nruns; i++) {
                     let result = r.get();
-                    let idx = r.indexOf(result);
-                    results[idx]++;
+                    if(!(result in counts)) counts[result] = 1
+                    else counts[result]++
                 }
 
-                // specify ratios of counts for each item
-                let ratios = [1/6, 2/6, 3/6];
+                for(let result in counts) {
+                    let rat = counts[result] / nruns;
 
-                // test that results are close to actual ratios
-                for(let idx in results) {
-                    let rat = results[idx] / nresults;
-
-                    assert.closeTo(rat, ratios[idx], 0.1);
+                    assert.closeTo(rat, rats[result], 0.1)
                 }
             })
 
+            // adjust weights and run again
             it('should adjust weights if specified', function() {
-                // confirm item counts are correct
-                for(let i = 0; i < 3; i++) {
-                    assert.equal(r.countOf(items[i]), i+1);
-                }
-
-                // store item counts
-                let counts = [];
-                for(let count of r._counts) {
-                    counts.push(count);
-                }
-
-                // set up exponent to use for weighting
+                let counts = {};
+                let compare_counts = {};
+                let nruns = 1000;
                 let exp = 2;
 
-                // adjust counts by exponent
-                for(let idx in counts) {
-                    counts[idx] = counts[idx] ** exp;
+                // store item counts adjusted by exponent
+                for(let item in r._items) {
+                    compare_counts[item] = r._items[item].count ** exp
                 }
 
-                // make sure counts are stored correctly
-                for(let i = 0; i < 3; i++) {
-                    assert.equal(counts[i], r._counts[i] ** exp);
-                }
-
-                // get total new counts
+                // get new total items
                 let total = 0;
-                for(let count of counts) {
-                    total += count;
+                for(let item in compare_counts) {
+                    total += compare_counts[item]
                 }
 
-                let results = [0,0,0];
-                let nresults = 1000;
+                // run a lot of times and store result counts
+                let result_counts = {}
 
-                // run a lot of times, store counts
-                for(let i = 0; i < nresults; i++) {
+                for(let i = 0; i < nruns; i++) {
                     let result = r.get(exp);
-                    let idx = r.indexOf(result);
-                    results[idx]++;
+                    if(!(result in result_counts)) result_counts[result] = 1
+                    else result_counts[result]++
                 }
 
-                // get ratios
-                let ratios = []
-                for(let count of counts) {
-                    ratios.push(count / total);
+                // make ratios from counts
+                let rats = {}
+                for(let key in compare_counts) {
+                    rats[key] = compare_counts[key] / total;
                 }
 
                 // test that results are close to actual ratios
-                for(let idx in results) {
-                    let rat = results[idx] / nresults;
+                for(let result in result_counts) {
+                    let rat = result_counts[result] / nruns;
 
-                    assert.closeTo(rat, ratios[idx], 0.1);
+                    assert.closeTo(rat, rats[result], 0.1);
                 }
             })
         })
